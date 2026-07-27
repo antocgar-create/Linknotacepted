@@ -25,6 +25,23 @@
   header p { margin: 4px 0 0; font-size: 12px; color: #8FAAD1; }
 
   .search-wrap { padding: 20px 20px 0; position: relative; }
+  .search-mode { display: flex; gap: 6px; padding: 12px 20px 0; }
+  .search-mode button {
+    flex: 1;
+    background: #12274A;
+    border: 1px solid #1E3A5F;
+    color: #8FAAD1;
+    border-radius: 8px;
+    padding: 7px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .search-mode button.active {
+    background: #2E7DF6;
+    border-color: #2E7DF6;
+    color: white;
+  }
   .search-wrap input {
     width: 100%;
     background: #12274A;
@@ -124,6 +141,10 @@
   <input id="searchInput" placeholder="Busca un nombre antes de invitar..." />
   <button class="clear-btn" id="clearBtn" style="display:none;">✕</button>
 </div>
+<div class="search-mode">
+  <button id="modeName" class="active">Por nombre</button>
+  <button id="modeEmpresa">Por empresa</button>
+</div>
 <div id="banner"></div>
 
 <div class="actions">
@@ -185,6 +206,24 @@ const searchInput = document.getElementById('searchInput');
 const clearBtn = document.getElementById('clearBtn');
 const bannerEl = document.getElementById('banner');
 const toastEl = document.getElementById('toast');
+const modeNameBtn = document.getElementById('modeName');
+const modeEmpresaBtn = document.getElementById('modeEmpresa');
+let searchMode = 'name';
+
+modeNameBtn.addEventListener('click', () => {
+  searchMode = 'name';
+  modeNameBtn.classList.add('active');
+  modeEmpresaBtn.classList.remove('active');
+  searchInput.placeholder = 'Busca un nombre antes de invitar...';
+  render();
+});
+modeEmpresaBtn.addEventListener('click', () => {
+  searchMode = 'empresa';
+  modeEmpresaBtn.classList.add('active');
+  modeNameBtn.classList.remove('active');
+  searchInput.placeholder = 'Busca por empresa...';
+  render();
+});
 
 function showToast(msg) {
   toastEl.textContent = msg;
@@ -200,11 +239,19 @@ function render() {
   let shown = contacts;
   if (q) {
     const nq = normalize(q);
-    shown = contacts.filter(c => normalize(c.name).includes(nq));
-    if (shown.length === 0) {
-      bannerEl.innerHTML = '<div class="result-banner ok">✓ Vía libre — no está en tu lista, puedes invitarlo.</div>';
+    if (searchMode === 'name') {
+      shown = contacts.filter(c => normalize(c.name).includes(nq));
     } else {
-      bannerEl.innerHTML = `<div class="result-banner warn">⚠ Cuidado — ${shown.length} coincidencia${shown.length>1?'s':''} encontrada${shown.length>1?'s':''}, ya lo intentaste antes.</div>`;
+      shown = contacts.filter(c => normalize(c.note || '').includes(nq));
+    }
+    if (shown.length === 0) {
+      bannerEl.innerHTML = searchMode === 'name'
+        ? '<div class="result-banner ok">✓ Vía libre — no está en tu lista, puedes invitarlo.</div>'
+        : '<div class="result-banner ok">Sin contactos guardados de esa empresa.</div>';
+    } else {
+      bannerEl.innerHTML = searchMode === 'name'
+        ? `<div class="result-banner warn">⚠ Cuidado — ${shown.length} coincidencia${shown.length>1?'s':''} encontrada${shown.length>1?'s':''}, ya lo intentaste antes.</div>`
+        : `<div class="result-banner warn">${shown.length} contacto${shown.length>1?'s':''} guardado${shown.length>1?'s':''} de esa empresa.</div>`;
     }
   } else {
     bannerEl.innerHTML = '';
